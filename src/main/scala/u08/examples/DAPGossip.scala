@@ -16,8 +16,8 @@ object DAPGossip:
   export u08.modelling.CTMCSimulation.*
 
   val gossipRules = DAP[Place](
-    Rule(MSet(A,A), m=>1000,  MSet(A),  MSet()),   // a|a --1000--> a
-    Rule(MSet(A),   m=>1,     MSet(A),  MSet(A)),       // a --1--> a|^a
+    Rule(MSet(A,A), m=>1000,  MSet(A), MSet(),  MSet()),   // a|a --1000--> a
+    Rule(MSet(A),   m=>1,     MSet(A), MSet(),  MSet(A)),       // a --1--> a|^a
   )
   val gossipCTMC = DAP.toCTMC[ID, Place](gossipRules)
   val net = Grids.createRectangularGrid(5, 5)

@@ -7,7 +7,7 @@ import scala.u08.utils.{Grids, MSet}
 // modules defining the concept of Distributed Asynchronous stochastic Petri net
 object DAP:
   // Rule of the net: pre --rateExp--> eff | ^msg
-  case class Rule[P](pre: MSet[P], rateExp: MSet[P] => Double, eff: MSet[P], msg: MSet[P])
+  case class Rule[P](pre: MSet[P], rateExp: MSet[P] => Double, eff: MSet[P], inh: MSet[P], msg: MSet[P])
 
   // Whole net's type
   type DAP[P] = Set[Rule[P]]
@@ -31,9 +31,10 @@ object DAP:
     case State(tokens, messages, neighbours) =>
       // we first try to apply rules
     (for
-        Rule(pre, rateExp, eff, msg) <- spn // get any rule
+        Rule(pre, rateExp, eff, inh, msg) <- spn // get any rule
         nodeId <- neighbours.keySet // get any node
         out <- tokens extract pre.map(Token(nodeId, _)) // checks if that node matches pre
+        if tokens disjoined inh.map(Token(nodeId, _))
         newtokens = out union eff.map(Token(nodeId, _)) // generate new tokens
         newmessages = messages union msg.map(Token(nodeId, _)) // generate new messages
         rate = rateExp(localTokens(tokens, nodeId)) // compute rate
@@ -54,7 +55,17 @@ object DAPGrid:
 
   // prints a grid of counting of p's tokens in the form of tokens(messages)
   def simpleGridStateToString[P](s: State[(Int,Int),P], p: P): String =
-    Grids.gridLikeToString(s.neighbours.keySet.max._1,s.neighbours.keySet.max._1,
-      (i,j) =>  localTokens(s.tokens,(i,j)).apply(p).toString +
-               "("+localTokens(s.messages, (i,j)).apply(p).toString+")"
+    Grids.gridLikeToString(
+      s.neighbours.keySet.max._1,s.neighbours.keySet.max._1,
+      (i,j) =>  
+        localTokens(s.tokens,(i,j)).apply(p).toString + 
+        "("+localTokens(s.messages, (i,j)).apply(p).toString+")"
+    )
+
+  def simpleGridStateToString2[P](s: State[(Int,Int),P], p: P*): String =
+    Grids.gridLikeToString(
+      s.neighbours.keySet.max._1,s.neighbours.keySet.max._1,
+      (i,j) =>
+        "[" + p.map(p => p.toString + "(" + localTokens(s.tokens,(i,j)).apply(p).toString + ")").reduce(_ + " " + _) + "/" +
+        p.map(p => p.toString + "(" + localTokens(s.messages,(i,j)).apply(p).toString + ")").reduce(_ + " " + _) + "];"
     )

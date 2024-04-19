@@ -2,6 +2,8 @@ package u08.examples
 
 import scala.math.BigDecimal.double2bigDecimal
 import scala.u08.utils.Time
+import breeze.linalg.*
+import breeze.plot.*
 
 object StochasticChannelExperiment extends App with de.sciss.chart.module.Charting:
   import u08.modelling.CTMCExperiment.*
@@ -17,10 +19,12 @@ object StochasticChannelExperiment extends App with de.sciss.chart.module.Charti
       timeBound = t.toDouble)
     yield (t, p)
 
-  Time.timed:
-    println:
-      data.mkString("\n")
+  val fig = Figure()
+  val plt = fig.subplot(0)
+  plt.setYAxisDecimalTickUnits()
 
-  given ChartTheme = ChartTheme.Default
-  val chart = de.sciss.chart.api.XYLineChart(data)
-  chart.show("P")
+  plt += breeze.plot.plot(
+    DenseVector(data.map(_._1.toDouble).toArray),
+    DenseVector(data.map(_._2).toArray),
+    name="P")
+  fig.refresh()
