@@ -1,11 +1,11 @@
 package scala.u08.modelling
 
-import u08.modelling.DAP.Token
-import u08.modelling.{DAP, DAPGrid}
+import u08.modelling.DAP.{State, Token}
+import u08.modelling.{CTMC, DAP, DAPGrid}
 
 import scala.u08.utils.{Grids, MSet}
 import java.util.Random
-import scala.u08.modelling.LargeScaleDesign.{Place, gossipCTMC, state}
+import scala.u08.modelling.LargeScaleDesign.{ID, Place, rules}
 
 object LargeScaleDesign:
   enum Place:
@@ -28,20 +28,46 @@ object LargeScaleDesign:
     Rule(MSet(M2, M2), m => 100000, MSet(M2), MSet(), MSet()), // destroy messages in surplus
   )
 
-  val rows = 5
-  val cols = 5
-
-  val gossipCTMC = DAP.toCTMC[ID, Place](rules)
-  val net = Grids.createRectangularGrid(rows, cols)
-  // an `a` initial on top left
-  val state = State[ID, Place](MSet(Token((0, 0), S), Token((0, 0), M1), Token((rows-1, cols-1), T)), MSet(), net)
-
 @main def mainDAPGossip =
   import LargeScaleDesign.Place.*
 
-  gossipCTMC.newSimulationTrace(state, new Random).takeWhile(e  => {
-    !(e._2.tokens matches MSet(Token((0, 0), R2)))
-  }).toList.foreach(step =>
-    println(step._1) // print time
-    println(DAPGrid.simpleGridStateToString2[Place](step._2, M1, M2)) // print state, i.e., A's
+  val n = 10
+  val results = (2 to 7).map(k  =>
+    val gossipCTMC = DAP.toCTMC[ID, Place](rules)
+    val net = Grids.createRectangularGrid(k, k)
+    val state = State[ID, Place](MSet(Token((0, 0), S), Token((0, 0), M1), Token((k - 1, k - 1), T)), MSet(), net)
+
+    print(k + ": ")
+    k ->
+    (0 until n).map(
+      i =>
+        print(i + "/" + n + ", " + (if (i == n-1) then "\n" else " "))
+        gossipCTMC.newSimulationTrace(state, new Random).takeWhile(e => {
+          !(e._2.tokens matches MSet(Token((0, 0), M2)))
+        }).toList.last._1
+    ).sum / n
   )
+
+  println(results)
+
+@main def plotResults =
+  val data = Vector(
+    (2,2.7539066286242266),
+    (3,5.688126971949448),
+    (4,7.227842771983525),
+    (5,8.893584430366783),
+    (6,11.675887325007295),
+    (7,12.827257091973376)
+  )
+
+  import breeze.linalg.*
+  import breeze.plot.*
+
+  val fig = Figure()
+  val plt = fig.subplot(0)
+
+  plt += breeze.plot.plot(
+    DenseVector(data.map(_._1.toDouble).toArray),
+    DenseVector(data.map(_._2).toArray),
+    name = "Communication from (0,0) to (k-1,k-1)")
+  fig.refresh()
