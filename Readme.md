@@ -1,5 +1,52 @@
 # Stochastic Analysis
 
+## Task 1: PRISM
+
+I implemented the Readers and Writers Petri Net in PRISM using the following Continuous Time Markow Chain:
+
+```
+ctmc
+const int K=10;
+const int p;
+module readers_and_writers
+
+    p1 : [0..K] init K;
+    p2 : [0..K] init 0;
+    p3 : [0..K] init 0;
+    p4 : [0..K] init 0;
+    p5 : [0..K] init 1;
+    p6 : [0..K] init 0;
+    p7 : [0..K] init 0;
+
+    [t1] p1>0 & p2<K -> 1 : (p1'=p1-1) & (p2'=p2+1);
+    [t2] p2>0 & p3<K -> 200000 : (p2'=p2-1) & (p3'=p3+1);
+    [t3] p2>0 & p4<K -> 100000 : (p2'=p2-1) & (p4'=p4+1);
+    [t4] p3>0 & p5>0 & p6<K & p5<K -> 100000 : (p3'=p3-1) & (p6'=p6+1);
+    [t5] p4>0 & p5>0 & p7<K & p6=0 -> 100000 : (p4'=p4-1) & (p5'=p5-1) & (p7'=p7+1);
+    [t6] p6>0 & p1<K -> 0.1*p6 : (p6'=p6-1) & (p1'=p1+1);
+    [t7] p7>0 & p1<K & p5<K -> 0.2 : (p7'=p7-1) & (p1'=p1+1) & (p5'=p5+1);
+
+endmodule
+```
+
+Where the place `p1` identifies the idle place, the place `p6` the readers, and the place `p7` the writers.
+
+After that I checked some properties, exploring the model's behaviour over time
+
+![at_least_one_reader](https://github.com/NicoloMalucelli/asmd_08-Stochastic_Analysis/assets/73821474/8fc6eafe-bd49-4291-88f7-b38b0f9e0c9e) \
+*probability that at least one process is reading `P=? [(true) U<=p (p6>0)] `*
+
+![at_least_one_writer](https://github.com/NicoloMalucelli/asmd_08-Stochastic_Analysis/assets/73821474/9581e49d-ed44-4e38-b7d8-14430e34aaed) \
+*probability that at least one process is writing `P=? [(true) U<=p (p7>0)] `*
+
+As we can notice, is more likely that a process will read rather than write due to the higher transition rate of the first.
+
+
+![at_least_one_reader_and_one_writer](https://github.com/NicoloMalucelli/asmd_08-Stochastic_Analysis/assets/73821474/ec9971aa-1330-462b-9d20-f28cc416cde1) \
+*probability that at least one process is reading and at least one is writing*
+
+This last graph has been generated from this formula `P=? [(true) U<=p (p7>0 & p6>0)] ` and show us that is not possible to be in a situation in which a process is writing while another is reading 
+
 ## Task 3: Large Scale Design
 
 The system behaviour is described by the following set of rules:
